@@ -1,1 +1,6 @@
 package frontend
+
+
+Scope :: struct {
+    
+}
