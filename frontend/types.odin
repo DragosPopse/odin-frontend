@@ -3,14 +3,17 @@ package frontend
 Type :: struct {
 	variant: union {
 		Type_Basic,
+		Type_Named,
 		Type_Struct,
 		Type_Proc,
 		Type_Generic,
 		Type_Pointer,
 		Type_Multi_Pointer,
+		Type_Array,
 		Type_Enumerated_Array,
 		Type_Slice,
 		Type_Dynamic_Array,
+		Type_Map,
 		Type_Enum,
 		Type_Tuple,
 		Type_Bit_Set,
@@ -216,61 +219,122 @@ Proc_Flag :: enum {
 Proc_Flags :: bit_set[Proc_Flag]
 
 Type_Proc :: struct {
+	node: ^Ast,
+	scope: ^Scope,
+	params: ^Type, // Type_Tuple
+	results: ^Type, // Type_Tuple
+	param_count: i32,
+	result_count: i32,
+	specialization_count: int,
+	calling_convention: Calling_Convention,
+	variadic_index: i32,
+	flags: Proc_Flags,
+}
 
+Type_Named :: struct {
+	name: string,
+	base: ^Type,
+	type_name: ^Entity, // Entity_Type_Name
 }
 
 Type_Generic :: struct {
-
+	id: i64,
+	name: string,
+	specialized: ^Type,
+	scope: ^Scope,
+	entity: ^Entity,
 }
 
 Type_Pointer :: struct {
-
+	elem: ^Type,
 }
 
 Type_Multi_Pointer :: struct {
+	elem: ^Type,
+}
 
+Type_Array :: struct {
+	elem: ^Type,
+	count: i64, // Note(Dragos): These can probably become int types
+	generic_count: ^Type,
 }
 
 Type_Enumerated_Array :: struct {
-
+	elem: ^Type,
+	index: ^Type,
+	min_value: ^Exact_Value, // Note(Dragos): Could the exact value be a val instead of ptr?
+	max_value: ^Exact_Value,
+	count: i64,
+	op: Token_Kind,
+	is_sparse: bool,
 }
 
 Type_Slice :: struct {
-
+	elem: ^Type,
 }
 
 Type_Dynamic_Array :: struct {
+	elem: ^Type,
+}
 
+Type_Map :: struct {
+	key: ^Type,
+	value: ^Type,
+	lookup_result_type: ^Type,
 }
 
 Type_Enum :: struct {
-
+	fields: []^Entity,
+	node: ^Ast,
+	scope: ^Scope,
+	base_type: ^Type,
+	min_value: ^Exact_Value,
+	max_value: ^Exact_Value,
+	min_value_index: int,
+	max_value_index: int,
 }
 
 Type_Tuple :: struct {
-
+	variables: []^Entity,
+	offsets: []i64,
+	are_offsets_being_processed: bool,
+	are_offsets_set: bool,
+	is_packed: bool,
 }
 
 Type_Bit_Set :: struct {
-
+	elem: ^Type,
+	underlying: ^Type,
+	lower: i64,
+	upper: i64,
+	node: ^Ast,
 }
 
 Type_Simd_Vector :: struct {
-
+	count: i64,
+	elem: ^Type,
+	generic_count: ^Type,
 }
 
 Type_Relative_Pointer :: struct {
-
+	pointer_type: ^Type,
+	base_integer: ^Type,
 }
 
 Type_Relative_Slice :: struct {
-
+	slice_type: ^Type,
+	base_integer: ^Type,
 }
 
 Type_Matrix :: struct {
-
+	elem: ^Type,
+	row_count: i64,
+	column_count: i64,
+	generic_row_count: ^Type,
+	generic_column_count: ^Type,
+	stride_in_bytes: i64,
 }
 
 Type_Soa_Pointer :: struct {
-
+	elem: ^Type,
 }
