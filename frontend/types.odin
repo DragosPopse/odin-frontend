@@ -1,5 +1,13 @@
 package frontend
 
+Type_Flag :: enum {
+	Polymorphic,
+	Poly_Specialized,
+	In_Process_Of_Checking_Polymorphic,
+}
+
+Type_Flags :: bit_set[Type_Flag]
+
 Type :: struct {
 	variant: union {
 		Type_Basic,
@@ -23,6 +31,10 @@ Type :: struct {
 		Type_Matrix,
 		Type_Soa_Pointer,
 	},
+	cached_size: int,
+	cached_align: int,
+	flags: Type_Flags,
+	failure: bool,
 }
 
 Basic_Kind :: enum {
@@ -338,3 +350,91 @@ Type_Matrix :: struct {
 Type_Soa_Pointer :: struct {
 	elem: ^Type,
 }
+
+Typeid_Kind :: enum {
+	Invalid,
+	Integer,
+	Rune,
+	Float,
+	Complex,
+	Quaternion,
+	String,
+	Boolean,
+	Any,
+	Type_Id,
+	Pointer,
+	Multi_Pointer,
+	Procedure,
+	Array,
+	Enumerated_Array,
+	Dynamic_Array,
+	Slice,
+	Tuple,
+	Struct,
+	Union,
+	Enum,
+	Map,
+	Bit_Set,
+	Simd_Vector,
+	Relative_Pointer,
+	Relative_Slice,
+	Matrix,
+	SoaPointer,
+}
+
+Type_Info_Flag :: enum {
+	Comparable     = 1<<0,
+	Simple_Compare = 1<<1,
+}
+
+Type_Info_Flags :: bit_set[Type_Info_Flag]
+
+MATRIX_ELEMENT_COUNT_MIN :: 1 
+MATRIX_ELEMENT_COUNT_MAX :: 16
+MATRIX_ELEMENT_MAX_SIZE :: MATRIX_ELEMENT_COUNT_MAX * (2 * 8) // complex128
+SIMD_ELEMENT_COUNT_MIN :: 1
+SIMD_ELEMENT_COUNT_MAX :: 64
+
+is_type_comparable :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_simple_compare :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+type_info_flags_of_type :: proc(type: ^Type) -> (flags: Type_Info_Flags) {
+	if type == nil do return
+	if is_type_comparable(type) do flags += {.Comparable}
+	if is_type_simple_compare(type) do flags += {.Simple_Compare}
+	return flags
+}
+
+Selection :: struct {
+	entity: ^Entity,
+	// Note(Dragos): Array seems to be a [dynamic]array in the compiler
+	index: [dynamic]int, // Note(Dragos): What this Array thing? Is it a small array? or slice? We'll see
+	indirect: bool,       // Set if there was a pointer deref anywhere down the line
+	swizzle_count: u8,    // maximum components = 4
+	swizle_indices: u8,   // 2 bits per component, representing which swizzle index
+	pseudo_field: bool,
+}
+
+empty_selection := Selection{}
+
+make_selection :: proc(entity: ^Entity, index: [dynamic]int, indirect: bool) -> Selection {
+	return Selection{entity, index, indirect, 0, 0, false}
+}
+
+selection_add_index :: proc(s: ^Selection, index: int) {
+	append(&s.index, index)
+}
+
+selection_combine :: proc(lhs: Selection, rhs: Selection) -> Selection {
+	unimplemented()
+}
+
+sub_selection :: proc(sel: Selection, offset: int) -> Selection {
+	unimplemented()
+}
+
