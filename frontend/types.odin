@@ -438,3 +438,342 @@ sub_selection :: proc(sel: Selection, offset: int) -> Selection {
 	unimplemented()
 }
 
+Odin_Atomic_Memory_Order :: enum {
+	relaxed = 0, // unordered
+	consume = 1, // monotonic
+	acquire = 2,
+	release = 3,
+	acq_rel = 4,
+	seq_cst = 5,
+	COUNT,
+};
+
+type_size_of :: proc(t: ^Type) -> int {
+	unimplemented()
+}
+
+type_align_of :: proc(t: ^Type) -> int {
+	unimplemented()
+}
+
+type_offset_of :: proc(t: ^Type, index: int) -> int {
+	unimplemented()
+}
+
+type_to_string :: proc(t: ^Type, shorthand: bool, allocator := context.allocator) -> string {
+	unimplemented()
+}
+
+init_map_internal_types :: proc(type: ^Type) {
+	unimplemented()
+}
+
+bit_set_to_int :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+are_types_identical :: proc(x: ^Type, y: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_pointer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_soa_pointer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_proc :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_slice :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_integer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+type_set_offsets :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+base_type :: proc(t: ^Type) {
+	unimplemented()
+}
+
+type_size_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
+	unimplemented()
+}
+
+type_align_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
+	unimplemented()
+}
+
+Type_Path :: struct {
+	path: [dynamic]^Entity, // Entity_TypeName
+	failure: bool,
+}
+
+type_path_init :: proc(tp: ^Type_Path) {
+	unimplemented()
+}
+
+type_path_free :: proc(tp: ^Type_Path) {
+	unimplemented()
+}
+
+type_path_print_illegal_cycle :: proc(tp: ^Type_Path, start_index: int) {
+	unimplemented("This needs to be rethinked since we might want to reroute printing")
+}
+
+type_path_push :: proc(tp: ^Type_Path, t: ^Type) -> bool {
+	unimplemented()
+}
+
+type_path_pop :: proc(tp: ^Type_Path) {
+	unimplemented()
+}
+
+FAILURE_SIZE :: 0
+FAILURE_ALIGNMENT :: 0
+
+Type_Ptr_Set :: map[^Type]bool
+
+type_ptr_set_update :: proc(s: ^Type_Ptr_Set, t: ^Type) -> bool {
+	unimplemented()
+}
+
+type_ptr_set_exists :: proc(s: ^Type_Ptr_Set, t: ^Type) -> bool {
+	unimplemented()
+}
+
+base_enum_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+core_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+set_base_type :: proc(t: ^Type, base: ^Type) {
+	unimplemented()
+}
+
+alloc_type :: proc(variant: $T) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_generic :: proc(scope: ^Scope, id: i64, name: string, specialized: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_pointer :: proc(elem: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_multi_pointer :: proc(elem: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_soa_pointer :: proc(elem: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_array :: proc(elem: ^Type, count: int, generic_count: ^Type = nil) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_matrix :: proc(elem: ^Type, row_count: int, column_count: int, generic_row_count: ^Type, generic_column_count: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_enumerated_array :: proc(elem: ^Type, index: ^Type, min_value: ^Exact_Value, max_value: ^Exact_Value, op: Token_Kind) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_slice :: proc(elem: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_dynamic_array :: proc(elem: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_struct :: proc() -> ^Type {
+	unimplemented()
+}
+
+alloc_type_union :: proc() -> ^Type {
+	unimplemented()
+}
+
+alloc_type_enum :: proc() -> ^Type {
+	unimplemented()
+}
+
+alloc_type_relative_pointer :: proc(pointer_type: ^Type, base_integer: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_relative_slice :: proc(slice_type: ^Type, base_integer: ^Type) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_named :: proc(name: string, base: ^Type, type_name: ^Entity) {
+	unimplemented()
+}
+
+is_calling_convention_none :: proc(c: Calling_Convention) -> bool {
+	unimplemented()
+}
+
+is_calling_convention_odin :: proc(c: Calling_Convention) -> bool {
+	unimplemented()
+}
+
+alloc_type_tuple :: proc() -> ^Type {
+	unimplemented()
+}
+
+alloc_type_proc :: proc(scope: ^Scope, params: ^Type, param_count: int, results: ^Type, result_count: int, variadic: bool, calling_conv: Calling_Convention) -> ^Type {
+	unimplemented()
+}
+
+is_type_valid_for_keys :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+alloc_type_bit_set :: proc() -> ^Type {
+	unimplemented()
+}
+
+alloc_type_simd_vector :: proc(count: int, elem: ^Type, generic_count: ^Type = nil) -> ^Type {
+	unimplemented()
+}
+
+type_deref :: proc(t: ^Type, allow_multi_pointer := false) -> ^Type {
+	unimplemented()
+}
+
+is_type_named :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_boolean :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_integer_like :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_unsigned :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_integer_128bit :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_rune :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_numeric :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_string :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_cstring :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_typed :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_untyped :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_ordered :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_ordered_numeric :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_constant_type :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_float :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_complex :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_quaternion :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_complex_or_quaternion :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_multi_pointer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_internally_pointer_like :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_tuple :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_uintptr :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_u8 :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_array :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_enumerated_array :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_matrix :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+matrix_align_of :: proc(t: ^Type, tp: ^Type_Path) -> int {
+	unimplemented()
+}
+
+matrix_type_stride_in_bytes :: proc(t: ^Type, tp: ^Type_Path) -> int {
+	unimplemented()
+}
+
+matrix_type_total_internal_elems :: proc(t: ^Type) -> int {
+	unimplemented()
+}
+
+matrix_indices_to_offset :: proc(t: ^Type, row_index: int, column_index: int) -> int {
+	unimplemented()
+}

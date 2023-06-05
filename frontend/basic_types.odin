@@ -1,5 +1,6 @@
 package frontend
 
+// Todo(Dragos): Finish defining these
 basic_types := [Basic_Kind]Type{
 	.Invalid = Type{
 		variant = Type_Basic{
@@ -454,3 +455,98 @@ t_untyped_string     := &basic_types[.Untyped_String    ]
 t_untyped_rune       := &basic_types[.Untyped_Rune      ]
 t_untyped_nil        := &basic_types[.Untyped_Nil       ]
 t_untyped_uninit     := &basic_types[.Untyped_Uninit    ]
+
+
+t_u8_ptr: ^Type
+t_int_ptr: ^Type
+t_i64_ptr: ^Type
+t_f64_ptr: ^Type
+t_u8_slice: ^Type
+t_string_slice: ^Type
+
+t_type_info: ^Type            
+t_type_info_enum_value           : ^Type
+t_type_info_ptr                  : ^Type
+t_type_info_enum_value_ptr       : ^Type
+t_type_info_named                : ^Type
+t_type_info_integer              : ^Type
+t_type_info_rune                 : ^Type
+t_type_info_float                : ^Type
+t_type_info_complex              : ^Type
+t_type_info_quaternion           : ^Type
+t_type_info_any                  : ^Type
+t_type_info_typeid               : ^Type
+t_type_info_string               : ^Type
+t_type_info_boolean              : ^Type
+t_type_info_pointer              : ^Type
+t_type_info_multi_pointer        : ^Type
+t_type_info_procedure            : ^Type
+t_type_info_array                : ^Type
+t_type_info_enumerated_array     : ^Type
+t_type_info_dynamic_array        : ^Type
+t_type_info_slice                : ^Type
+t_type_info_parameters           : ^Type
+t_type_info_struct               : ^Type
+t_type_info_union                : ^Type
+t_type_info_enum                 : ^Type
+t_type_info_map                  : ^Type
+t_type_info_bit_set              : ^Type
+t_type_info_simd_vector          : ^Type
+t_type_info_relative_pointer     : ^Type
+t_type_info_relative_slice       : ^Type
+t_type_info_matrix               : ^Type
+t_type_info_soa_pointer          : ^Type
+t_type_info_named_ptr            : ^Type
+t_type_info_integer_ptr          : ^Type
+t_type_info_rune_ptr             : ^Type
+t_type_info_float_ptr            : ^Type
+t_type_info_complex_ptr          : ^Type
+t_type_info_quaternion_ptr       : ^Type
+t_type_info_any_ptr              : ^Type
+t_type_info_typeid_ptr           : ^Type
+t_type_info_string_ptr           : ^Type
+t_type_info_boolean_ptr          : ^Type
+t_type_info_pointer_ptr          : ^Type
+t_type_info_multi_pointer_ptr    : ^Type
+t_type_info_procedure_ptr        : ^Type
+t_type_info_array_ptr            : ^Type
+t_type_info_enumerated_array_ptr : ^Type
+t_type_info_dynamic_array_ptr    : ^Type
+t_type_info_slice_ptr            : ^Type
+t_type_info_parameters_ptr       : ^Type
+t_type_info_struct_ptr           : ^Type
+t_type_info_union_ptr            : ^Type
+t_type_info_enum_ptr             : ^Type
+t_type_info_map_ptr              : ^Type
+t_type_info_bit_set_ptr          : ^Type
+t_type_info_simd_vector_ptr      : ^Type
+t_type_info_relative_pointer_ptr : ^Type
+t_type_info_relative_slice_ptr   : ^Type
+t_type_info_matrix_ptr           : ^Type
+t_type_info_soa_pointer_ptr      : ^Type
+t_allocator                      : ^Type
+t_allocator_ptr                  : ^Type
+t_context                        : ^Type
+t_context_ptr                    : ^Type
+t_allocator_error                : ^Type
+t_source_code_location           : ^Type
+t_source_code_location_ptr       : ^Type
+t_map_info                       : ^Type
+t_map_cell_info                  : ^Type
+t_raw_map                        : ^Type
+t_map_info_ptr                   : ^Type
+t_map_cell_info_ptr              : ^Type
+t_raw_map_ptr                    : ^Type
+t_equal_proc  : ^Type
+t_hasher_proc : ^Type
+t_map_get_proc : ^Type
+t_map_set_proc : ^Type
+t_objc_object   : ^Type
+t_objc_selector : ^Type
+t_objc_class    : ^Type
+t_objc_id    : ^Type
+t_objc_SEL   : ^Type
+t_objc_Class : ^Type
+
+
+t_atomic_memory_order: ^Type
