@@ -4,6 +4,14 @@ Ast :: struct {
     
 }
 
+Ast_File :: struct {
+
+}
+
+Loaded_File :: struct {
+	
+}
+
 Calling_Convention :: enum {
 	Invalid     = 0,
 	Odin        = 1,
