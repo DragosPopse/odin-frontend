@@ -777,3 +777,343 @@ matrix_type_total_internal_elems :: proc(t: ^Type) -> int {
 matrix_indices_to_offset :: proc(t: ^Type, row_index: int, column_index: int) -> int {
 	unimplemented()
 }
+
+matrix_row_major_index_to_offset :: proc(t: ^Type, index: int) -> int {
+	unimplemented()
+}
+
+matrix_column_major_index_to_offset :: proc(t: ^Type, index: int) -> int {
+	unimplemented()
+}
+
+is_matrix_square :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_valid_for_matrix_elems :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_dynamic_array :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_asm_proc :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_simd_vector :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+base_array_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+is_type_generic :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_relative_pointer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_relative_slice :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_u8_slice :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_u8_array :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_u8_ptr :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_u8_multi_ptr :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_rune_array :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_array_like :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+core_array_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+type_math_rank :: proc(t: ^Type) -> int {
+	unimplemented()
+}
+
+base_complex_elem_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+is_type_struct :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_union :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_soa_struct :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_raw_union :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_enum :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_bit_set :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_map :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_union_maybe_pointer :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_union_maybe_pointer_original_alignment :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_endian_big :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_endian_little :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_endian_platform :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_endian_specific :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+types_have_same_internal_endian :: proc(a: ^Type, b: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_dereferenceable :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_different_to_arch_endianness :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+integer_endian_type_to_platform_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+is_type_any :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_typeid :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_untyped_nil :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_untyped_uninit :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_empty_union :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_valid_bit_set_elem :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_valid_vector_elem :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_indexable :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_sliceable :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_polymorphic_record :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+polymorphic_record_parent_scope :: proc(t: ^Type) -> ^Scope {
+	unimplemented()
+}
+
+is_type_polymorphic_record_specialized :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_polymorphic_record_unspecialized :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+get_record_polymorphic_params :: proc(t: ^Type) -> ^Type_Tuple {
+	unimplemented()
+}
+
+is_type_polymorphic :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+type_has_nil :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+elem_type_can_be_constant :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_lock_free :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+is_type_load_safe :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+lookup_subtype_polymorphic_field :: proc(dst: ^Type, src: ^Type) -> string {
+	unimplemented()
+}
+
+lookup_subtype_polymorphic_selection :: proc(dst: ^Type, src: ^Type, sel: ^Selection) -> bool {
+	unimplemented()
+}
+
+are_types_identical_internal :: proc(x: ^Type, y: ^Type, check_tuple_names: bool) -> bool {
+	unimplemented()
+}
+
+are_types_identical_unique_tuples :: proc(x: ^Type, y: ^Type) -> bool {
+	unimplemented()
+}
+
+default_type :: proc(t: ^Type) -> ^Type {
+	unimplemented()
+}
+
+union_variant_index_types_equal :: proc(v: ^Type, vt: ^Type) -> bool {
+	unimplemented()
+}
+
+union_variant_index :: proc(u: ^Type, v: ^Type) -> int {
+	unimplemented()
+}
+
+union_tag_size :: proc(u: ^Type) -> int {
+	unimplemented()
+}
+
+union_tag_type :: proc(u: ^Type) -> ^Type {
+	unimplemented()
+}
+
+Proc_Type_Overload_Kind :: enum {
+	Identical, // The types are identical
+	Calling_Convention,
+	Param_Count,
+	Param_Variadic,
+	Param_Types,
+	Result_Count,
+	Result_Types,
+	Polymorphic,
+	Not_Procedure,	
+}
+
+are_proc_types_overload_safe :: proc(x: ^Type, y: ^Type) -> Proc_Type_Overload_Kind {
+	unimplemented()
+}
+
+lookup_field_with_selection :: proc(type_: ^Type, field_name: string, is_type: bool, sel: Selection, allow_blank_ident := false) -> Selection {
+	unimplemented()
+}
+
+lookup_field :: proc(type_: ^Type, field_name: string, is_type: bool, allow_blank_ident := false) -> Selection {
+	unimplemented()
+}
+
+lookup_field_from_index :: proc(type: ^Type, index: int) -> Selection {
+	unimplemented()
+}
+
+scope_lookup_current :: proc(s: ^Scope, name: string) -> ^Entity {
+	unimplemented()
+}
+
+has_type_got_objc_class_attribute :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+are_struct_fields_reordered :: proc(t: ^Type) -> bool {
+	unimplemented()
+}
+
+struct_fields_index_by_increasing_offset :: proc(t: ^Type, allocator := context.allocator) -> []int {
+	unimplemented()
+}
+
+type_aling_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
+	unimplemented()
+}
+
+type_size_of_struct_pretend_is_packed :: proc(ot: ^Type) -> int {
+	unimplemented()
+}
+
+type_set_offsets_of :: proc(fields: []^Entity, is_packed: bool, is_raw_union: bool) -> ^int {
+	unimplemented()
+}
+
+type_offset_of_from_selection :: proc(t: ^Type, sel: Selection) -> int {
+	unimplemented()
+}
+
+check_is_assignable_to_using_subtype :: proc(src: ^Type, dst: ^Type, level := 0, src_is_ptr := false) -> int {
+	unimplemented()
+}
+
+is_type_subtype_of :: proc(src: ^Type, dst: ^Type) -> bool {
+	unimplemented()
+}
+
+alloc_type_tuple_from_field_types :: proc(field_types: []^Type, is_packed, must_be_tuple: bool) -> ^Type {
+	unimplemented()
+}
+
+alloc_type_proc_from_types :: proc(param_types: []^Type, results: []^Type, is_c_vararg: bool, calling_conv: Calling_Convention) -> ^Type {
+	unimplemented()
+}
+
+write_type_to_string :: proc(str: string, type: ^Type, shorthand := false) -> string {
+	unimplemented()
+}
