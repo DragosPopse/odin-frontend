@@ -191,8 +191,8 @@ Type_Struct :: struct {
 
 Union_Type_Kind :: enum {
 	Normal,
-	no_nil,
-	shared_nil,
+	No_Nil,
+	Shared_Nil,
 }
 
 Union_Flag :: enum {
