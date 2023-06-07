@@ -1037,15 +1037,3 @@ expr_to_string :: proc(expr: ^Ast) -> string {
 allow_field_separator :: proc(f: ^Ast_File) -> bool {
 	unimplemented()
 }
-
-Decl_Info :: struct {
-	
-}
-
-File_Info :: struct {
-
-}
-
-Loaded_File :: struct {
-
-}
