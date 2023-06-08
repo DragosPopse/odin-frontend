@@ -1068,10 +1068,6 @@ lookup_field_from_index :: proc(type: ^Type, index: int) -> Selection {
 	unimplemented()
 }
 
-scope_lookup_current :: proc(s: ^Scope, name: string) -> ^Entity {
-	unimplemented()
-}
-
 has_type_got_objc_class_attribute :: proc(t: ^Type) -> bool {
 	unimplemented()
 }

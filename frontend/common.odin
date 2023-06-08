@@ -15,11 +15,4 @@ Loaded_File :: struct {
 
 }
 
-Builtin_Proc_Id :: enum {
-
-}
-
-
-
-
 Decl_Attribute_Proc :: #type proc()
