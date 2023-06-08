@@ -1,5 +1,7 @@
 package frontend
 
+// Warning(Dragos): I think i forgot to do the multithreading work for this one
+
 Type_Flag :: enum {
 	Polymorphic,
 	Poly_Specialized,
