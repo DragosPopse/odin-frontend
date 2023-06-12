@@ -487,23 +487,46 @@ is_type_soa_pointer :: proc(t: ^Type) -> bool {
 }
 
 is_type_proc :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Proc;
 }
 
 is_type_slice :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Slice;
 }
 
-is_type_integer :: proc(t: ^Type) -> bool {
-	unimplemented()
+is_type_integer :: proc(arg_t: ^Type) -> bool {
+	t := base_type(arg_t)
+	basic, is_basic := t.variant.(Type_Basic)
+	if is_basic {
+		return (basic.flags & {.Integer}) != bit_set[Basic_Flag]{};
+	}
+	return false;
 }
 
 type_set_offsets :: proc(t: ^Type) -> bool {
 	unimplemented()
 }
 
-base_type :: proc(t: ^Type) {
-	unimplemented()
+import "core:reflect";
+
+base_type :: proc(arg_t: ^Type) -> ^Type {
+	t := arg_t
+	for {
+		if (t == nil) {
+			break
+		}
+		named, is_named := t.variant.(Type_Named)
+		if (!is_named) {
+			break
+		}
+		if (t == named.base) {
+			return t_invalid
+		}
+		t = t.variant.(Type_Named).base
+	}
+	return t;
 }
 
 type_size_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
@@ -661,15 +684,33 @@ type_deref :: proc(t: ^Type, allow_multi_pointer := false) -> ^Type {
 }
 
 is_type_named :: proc(t: ^Type) -> bool {
-	unimplemented()
+	_, is_basic := t.variant.(Type_Basic)
+	if is_basic do return true;
+	_, is_named := t.variant.(Type_Named)
+	return is_named;
 }
 
-is_type_boolean :: proc(t: ^Type) -> bool {
-	unimplemented()
+is_type_boolean :: proc(arg_t: ^Type) -> bool {
+	t := base_type(arg_t)
+	basic, is_basic := t.variant.(Type_Basic)
+	if is_basic {
+		return (basic.flags & {.Boolean}) != bit_set[Basic_Flag]{};
+	}
+	return false;
 }
 
 is_type_integer_like :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & (BasicFlag_Integer|BasicFlag_Boolean)) != 0;
+	}
+	if (t->kind == Type_BitSet) {
+		if (t->BitSet.underlying) {
+			return is_type_integer_like(t->BitSet.underlying);
+		}
+		return true;
+	}
+	return false;
 }
 
 is_type_unsigned :: proc(t: ^Type) -> bool {
@@ -677,11 +718,19 @@ is_type_unsigned :: proc(t: ^Type) -> bool {
 }
 
 is_type_integer_128bit :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Integer) != 0 && t->Basic.size == 16;
+	}
+	return false;
 }
 
 is_type_rune :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Rune) != 0;
+	}
+	return false;
 }
 
 is_type_numeric :: proc(t: ^Type) -> bool {
@@ -689,19 +738,41 @@ is_type_numeric :: proc(t: ^Type) -> bool {
 }
 
 is_type_string :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_String) != 0;
+	}
+	return false;
 }
 
 is_type_cstring :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Basic) {
+		return t->Basic.kind == Basic_cstring;
+	}
+	return false;
 }
 
 is_type_typed :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t == nullptr) {
+		return false;
+	}
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Untyped) == 0;
+	}
+	return true;
 }
 
 is_type_untyped :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t == nullptr) {
+		return false;
+	}
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Untyped) != 0;
+	}
+	return false;
 }
 
 is_type_ordered :: proc(t: ^Type) -> bool {
@@ -709,7 +780,12 @@ is_type_ordered :: proc(t: ^Type) -> bool {
 }
 
 is_type_ordered_numeric :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	switch (t->kind) {
+	case Type_Basic:
+		return (t->Basic.flags & BasicFlag_OrderedNumeric) != 0;
+	}
+	return false;
 }
 
 is_type_constant_type :: proc(t: ^Type) -> bool {
@@ -717,51 +793,78 @@ is_type_constant_type :: proc(t: ^Type) -> bool {
 }
 
 is_type_float :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Float) != 0;
+	}
+	return false;
 }
 
 is_type_complex :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Complex) != 0;
+	}
+	return false;
 }
 
 is_type_quaternion :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & BasicFlag_Quaternion) != 0;
+	}
+	return false;
 }
 
 is_type_complex_or_quaternion :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & (BasicFlag_Complex|BasicFlag_Quaternion)) != 0;
+	}
+	return false;
 }
 
 is_type_multi_pointer :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_MultiPointer;
 }
 
 is_type_internally_pointer_like :: proc(t: ^Type) -> bool {
-	unimplemented()
+	return is_type_pointer(t) || is_type_multi_pointer(t) || is_type_cstring(t) || is_type_proc(t);
 }
 
 is_type_tuple :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Tuple;
 }
 
 is_type_uintptr :: proc(t: ^Type) -> bool {
-	unimplemented()
+	if (t->kind == Type_Basic) {
+		return (t->Basic.kind == Basic_uintptr);
+	}
+	return false;
 }
 
 is_type_u8 :: proc(t: ^Type) -> bool {
-	unimplemented()
+	if (t->kind == Type_Basic) {
+		return t->Basic.kind == Basic_u8;
+	}
+	return false;
 }
 
 is_type_array :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Array;
 }
 
 is_type_enumerated_array :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_EnumeratedArray;
 }
 
 is_type_matrix :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Matrix;
 }
 
 matrix_align_of :: proc(t: ^Type, tp: ^Type_Path) -> int {
@@ -797,55 +900,91 @@ is_type_valid_for_matrix_elems :: proc(t: ^Type) -> bool {
 }
 
 is_type_dynamic_array :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_DynamicArray;
 }
 
 is_type_asm_proc :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Proc && t->Proc.calling_convention == ProcCC_InlineAsm;
 }
 
 is_type_simd_vector :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_SimdVector;
 }
 
 base_array_type :: proc(t: ^Type) -> ^Type {
-	unimplemented()
+	Type *bt = base_type(t);
+	if (is_type_array(bt)) {
+		return bt->Array.elem;
+	} else if (is_type_enumerated_array(bt)) {
+		return bt->EnumeratedArray.elem;
+	} else if (is_type_simd_vector(bt)) {
+		return bt->SimdVector.elem;
+	} else if (is_type_matrix(bt)) {
+		return bt->Matrix.elem;
+	}
+	return t;
 }
 
 is_type_generic :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Generic;
 }
 
 is_type_relative_pointer :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_RelativePointer;
 }
 
 is_type_relative_slice :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_RelativeSlice;
 }
 
 is_type_u8_slice :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Slice) {
+		return is_type_u8(t->Slice.elem);
+	}
+	return false;
 }
 
 is_type_u8_array :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Array) {
+		return is_type_u8(t->Array.elem);
+	}
+	return false;
 }
 
 is_type_u8_ptr :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Pointer) {
+		return is_type_u8(t->Slice.elem);
+	}
+	return false;
 }
 
 is_type_u8_multi_ptr :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_MultiPointer) {
+		return is_type_u8(t->Slice.elem);
+	}
+	return false;
 }
 
 is_type_rune_array :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Array) {
+		return is_type_rune(t->Array.elem);
+	}
+	return false;
 }
 
 is_type_array_like :: proc(t: ^Type) -> bool {
-	unimplemented()
+	return is_type_array(t) || is_type_enumerated_array(t);
 }
 
 core_array_type :: proc(t: ^Type) -> ^Type {
@@ -861,83 +1000,221 @@ base_complex_elem_type :: proc(t: ^Type) -> ^Type {
 }
 
 is_type_struct :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Struct;
 }
 
 is_type_union :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Union;
 }
 
 is_type_soa_struct :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Struct && t->Struct.soa_kind != StructSoa_None;
 }
 
 is_type_raw_union :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_Struct && t->Struct.is_raw_union);
 }
 
 is_type_enum :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_Enum);
 }
 
 is_type_bit_set :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_BitSet);
 }
 
 is_type_map :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Map;
 }
 
 is_type_union_maybe_pointer :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Union && t->Union.variants.count == 1) {
+		Type *v = t->Union.variants[0];
+		return is_type_internally_pointer_like(v);
+	}
+	return false;
 }
 
 is_type_union_maybe_pointer_original_alignment :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	if (t->kind == Type_Union && t->Union.variants.count == 1) {
+		Type *v = t->Union.variants[0];
+		if (is_type_internally_pointer_like(v)) {
+			return type_align_of(v) == type_align_of(t);
+		}
+	}
+	return false;
 }
 
 is_type_endian_big :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		if (t->Basic.flags & BasicFlag_EndianBig) {
+			return true;
+		} else if (t->Basic.flags & BasicFlag_EndianLittle) {
+			return false;
+		}
+		return build_context.endian_kind == TargetEndian_Big;
+	} else if (t->kind == Type_BitSet) {
+		return is_type_endian_big(bit_set_to_int(t));
+	} else if (t->kind == Type_Pointer) {
+		return is_type_endian_big(&basic_types[Basic_uintptr]);
+	}
+	return build_context.endian_kind == TargetEndian_Big;
 }
 
 is_type_endian_little :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		if (t->Basic.flags & BasicFlag_EndianLittle) {
+			return true;
+		} else if (t->Basic.flags & BasicFlag_EndianBig) {
+			return false;
+		}
+		return build_context.endian_kind == TargetEndian_Little;
+	} else if (t->kind == Type_BitSet) {
+		return is_type_endian_little(bit_set_to_int(t));
+	} else if (t->kind == Type_Pointer) {
+		return is_type_endian_little(&basic_types[Basic_uintptr]);
+	}
+	return build_context.endian_kind == TargetEndian_Little;
 }
 
 is_type_endian_platform :: proc(t: ^Type) -> bool {
-	unimplemented()
-}
-
-is_type_endian_specific :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_Basic) {
+		return (t->Basic.flags & (BasicFlag_EndianLittle|BasicFlag_EndianBig)) == 0;
+	} else if (t->kind == Type_BitSet) {
+		return is_type_endian_platform(bit_set_to_int(t));
+	} else if (t->kind == Type_Pointer) {
+		return is_type_endian_platform(&basic_types[Basic_uintptr]);
+	}
+	return false;
 }
 
 types_have_same_internal_endian :: proc(a: ^Type, b: ^Type) -> bool {
-	unimplemented()
+	return is_type_endian_little(a) == is_type_endian_little(b);
+}
+
+is_type_endian_specific :: proc(t: ^Type) -> bool {
+	t = core_type(t);
+	if (t->kind == Type_BitSet) {
+		t = bit_set_to_int(t);
+	}
+	if (t->kind == Type_Basic) {
+		switch (t->Basic.kind) {
+		case Basic_i16le:
+		case Basic_u16le:
+		case Basic_i32le:
+		case Basic_u32le:
+		case Basic_i64le:
+		case Basic_u64le:
+		case Basic_u128le:
+			return true;
+
+		case Basic_i16be:
+		case Basic_u16be:
+		case Basic_i32be:
+		case Basic_u32be:
+		case Basic_i64be:
+		case Basic_u64be:
+		case Basic_u128be:
+			return true;
+
+		case Basic_f16le:
+		case Basic_f16be:
+		case Basic_f32le:
+		case Basic_f32be:
+		case Basic_f64le:
+		case Basic_f64be:
+			return true;
+		}
+	}
+
+	return false;
 }
 
 is_type_dereferenceable :: proc(t: ^Type) -> bool {
-	unimplemented()
+	if (is_type_rawptr(t)) {
+		return false;
+	}
+	return is_type_pointer(t) || is_type_soa_pointer(t);
 }
 
 is_type_different_to_arch_endianness :: proc(t: ^Type) -> bool {
-	unimplemented()
+	switch (build_context.endian_kind) {
+		case TargetEndian_Little:
+			return !is_type_endian_little(t);
+		case TargetEndian_Big:
+			return !is_type_endian_big(t);
+		}
+		return false;
 }
 
 integer_endian_type_to_platform_type :: proc(t: ^Type) -> ^Type {
-	unimplemented()
+	t = core_type(t);
+	if (t->kind == Type_BitSet) {
+		t = bit_set_to_int(t);
+	}
+	GB_ASSERT_MSG(t->kind == Type_Basic, "%s", type_to_string(t));
+
+	switch (t->Basic.kind) {
+	// Endian Specific Types
+	case Basic_i16le: return t_i16;
+	case Basic_u16le: return t_u16;
+	case Basic_i32le: return t_i32;
+	case Basic_u32le: return t_u32;
+	case Basic_i64le: return t_i64;
+	case Basic_u64le: return t_u64;
+	case Basic_i128le: return t_i128;
+	case Basic_u128le: return t_u128;
+
+	case Basic_i16be: return t_i16;
+	case Basic_u16be: return t_u16;
+	case Basic_i32be: return t_i32;
+	case Basic_u32be: return t_u32;
+	case Basic_i64be: return t_i64;
+	case Basic_u64be: return t_u64;
+	case Basic_i128be: return t_i128;
+	case Basic_u128be: return t_u128;
+
+	case Basic_f16le: return t_f16;
+	case Basic_f16be: return t_f16;
+	case Basic_f32le: return t_f32;
+	case Basic_f32be: return t_f32;
+	case Basic_f64le: return t_f64;
+	case Basic_f64be: return t_f64;
+	}
+
+	return t;
 }
 
 is_type_any :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_Basic && t->Basic.kind == Basic_any);
 }
 
 is_type_typeid :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_Basic && t->Basic.kind == Basic_typeid);
 }
 
 is_type_untyped_nil :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return (t->kind == Type_Basic && t->Basic.kind == Basic_UntypedNil);
+}
+
+is_type_untyped_undef :: proc(t: ^Type) -> bool {
+	t = base_type(t);
+	return (t->kind == Type_Basic && t->Basic.kind == Basic_UntypedUndef);
 }
 
 is_type_untyped_uninit :: proc(t: ^Type) -> bool {
@@ -945,7 +1222,8 @@ is_type_untyped_uninit :: proc(t: ^Type) -> bool {
 }
 
 is_type_empty_union :: proc(t: ^Type) -> bool {
-	unimplemented()
+	t = base_type(t);
+	return t->kind == Type_Union && t->Union.variants.count == 0;
 }
 
 is_type_valid_bit_set_elem :: proc(t: ^Type) -> bool {
@@ -1037,7 +1315,16 @@ union_tag_size :: proc(u: ^Type) -> int {
 }
 
 union_tag_type :: proc(u: ^Type) -> ^Type {
-	unimplemented()
+	i64 s = union_tag_size(u);
+	switch (s) {
+	case  0: return  t_u8;
+	case  1: return  t_u8;
+	case  2: return  t_u16;
+	case  4: return  t_u32;
+	case  8: return  t_u64;
+	}
+	GB_PANIC("Invalid union_tag_size");
+	return t_uint;
 }
 
 Proc_Type_Overload_Kind :: enum {
@@ -1053,65 +1340,93 @@ Proc_Type_Overload_Kind :: enum {
 }
 
 are_proc_types_overload_safe :: proc(x: ^Type, y: ^Type) -> Proc_Type_Overload_Kind {
+	//Do later
 	unimplemented()
 }
 
 lookup_field_with_selection :: proc(type_: ^Type, field_name: string, is_type: bool, sel: Selection, allow_blank_ident := false) -> Selection {
+	//Do later
 	unimplemented()
 }
 
 lookup_field :: proc(type_: ^Type, field_name: string, is_type: bool, allow_blank_ident := false) -> Selection {
+	//Do later
 	unimplemented()
 }
 
 lookup_field_from_index :: proc(type: ^Type, index: int) -> Selection {
+	//Do later
 	unimplemented()
 }
 
 has_type_got_objc_class_attribute :: proc(t: ^Type) -> bool {
-	unimplemented()
+	return t->kind == Type_Named && t->Named.type_name != nullptr && t->Named.type_name->TypeName.objc_class_name != "";
 }
 
 are_struct_fields_reordered :: proc(t: ^Type) -> bool {
-	unimplemented()
+	type = base_type(type);
+	GB_ASSERT(type->kind == Type_Struct);
+	type_set_offsets(type);
+	GB_ASSERT(type->Struct.offsets != nullptr);
+	
+	i64 prev_offset = 0;
+	for_array(i, type->Struct.fields) {
+		i64 offset = type->Struct.offsets[i];
+		if (prev_offset > offset) {
+			return true;
+		}
+		prev_offset = offset;
+	}
+
+	return false;
 }
 
 struct_fields_index_by_increasing_offset :: proc(t: ^Type, allocator := context.allocator) -> []int {
+	//Do later
 	unimplemented()
 }
 
-type_aling_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
+type_align_of_internal :: proc(t: ^Type, path: ^Type_Path) -> int {
+	//Do later
 	unimplemented()
 }
 
 type_size_of_struct_pretend_is_packed :: proc(ot: ^Type) -> int {
+	//Do later
 	unimplemented()
 }
 
 type_set_offsets_of :: proc(fields: []^Entity, is_packed: bool, is_raw_union: bool) -> ^int {
+	//Do later
 	unimplemented()
 }
 
 type_offset_of_from_selection :: proc(t: ^Type, sel: Selection) -> int {
+	//Do later
 	unimplemented()
 }
 
 check_is_assignable_to_using_subtype :: proc(src: ^Type, dst: ^Type, level := 0, src_is_ptr := false) -> int {
+	//Do later
 	unimplemented()
 }
 
 is_type_subtype_of :: proc(src: ^Type, dst: ^Type) -> bool {
+	//Do later
 	unimplemented()
 }
 
 alloc_type_tuple_from_field_types :: proc(field_types: []^Type, is_packed, must_be_tuple: bool) -> ^Type {
+	//Do later
 	unimplemented()
 }
 
 alloc_type_proc_from_types :: proc(param_types: []^Type, results: []^Type, is_c_vararg: bool, calling_conv: Calling_Convention) -> ^Type {
+	//Do later
 	unimplemented()
 }
 
 write_type_to_string :: proc(str: string, type: ^Type, shorthand := false) -> string {
+	//do later
 	unimplemented()
 }
