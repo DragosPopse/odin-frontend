@@ -16,7 +16,7 @@ test_tokenizer :: proc(T: ^test.T) {
     src := string(data)
     tokenizer_init(&t, src, fullpath)
 
-    for tok := scan(&t); tok.kind != .EOF; tok = scan(&t) {
+    for tok := tokenizer_scan(&t); tok.kind != .EOF; tok = tokenizer_scan(&t) {
         fmt.sbprintf(&output_sb, "%v[%v](%d:%d)\n", tok.text, tok.kind, tok.pos.line, tok.pos.column)
     }
 
