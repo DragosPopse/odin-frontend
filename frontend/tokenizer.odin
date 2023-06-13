@@ -7,6 +7,7 @@ import "core:slice"
 import "core:fmt"
 import "core:unicode"
 import "core:unicode/utf8"
+import "core:os"
 
 
 
@@ -72,6 +73,23 @@ tokenizer_init :: proc(t: ^Tokenizer, src: string, path: string, err: Error_Hand
     if t.ch == utf8.RUNE_BOM {
         advance_rune(t) 
     }
+}
+
+tokenizer_init_from_fullpath :: proc(t: ^Tokenizer, src: string, path: string, err: Error_Handler = default_error_handler) -> Tokenizer_Init_Error {
+    t.err = err
+    t.ch = ' '
+    t.offset = 0
+    t.read_offset = 0
+    t.line_offset = 0
+    data, file_error := os.read_entire_file(path)
+    if file_error do return .Invalid
+
+    t.src = string(data)
+    t.line_count = 1 if len(src) > 0 else 0
+    t.error_count = 0
+    t.fullpath = path
+
+    return .None
 }
 
 offset_to_pos :: proc(t: ^Tokenizer, offset: int) -> Token_Pos {
@@ -464,7 +482,7 @@ scan_number :: proc(t: ^Tokenizer, seen_decimal_point: bool) -> (Token_Kind, str
     return kind, t.src[offset : t.offset]
 }
 
-scan :: proc(t: ^Tokenizer) -> Token {
+tokenizer_scan :: proc(t: ^Tokenizer) -> Token {
     skip_whitespace(t)
 
     offset := t.offset
@@ -516,7 +534,7 @@ scan :: proc(t: ^Tokenizer) -> Token {
 
                 case '\\': {
                     t.insert_semicolon = false
-                    token := scan(t)
+                    token := tokenizer_scan(t)
                     if token.pos.line == pos.line {
                         error(t, token.pos.offset, "expected a newline after \\")
                     }
