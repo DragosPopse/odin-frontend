@@ -537,16 +537,16 @@ t_raw_map                        : ^Type
 t_map_info_ptr                   : ^Type
 t_map_cell_info_ptr              : ^Type
 t_raw_map_ptr                    : ^Type
-t_equal_proc  : ^Type
-t_hasher_proc : ^Type
-t_map_get_proc : ^Type
-t_map_set_proc : ^Type
-t_objc_object   : ^Type
-t_objc_selector : ^Type
-t_objc_class    : ^Type
-t_objc_id    : ^Type
-t_objc_SEL   : ^Type
-t_objc_Class : ^Type
+t_equal_proc  					 : ^Type
+t_hasher_proc 					 : ^Type
+t_map_get_proc 					 : ^Type
+t_map_set_proc 					 : ^Type
+t_objc_object   				 : ^Type
+t_objc_selector 				 : ^Type
+t_objc_class    				 : ^Type
+t_objc_id    					 : ^Type
+t_objc_SEL   					 : ^Type
+t_objc_Class 					 : ^Type
 
 
 t_atomic_memory_order: ^Type
