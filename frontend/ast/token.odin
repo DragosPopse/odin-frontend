@@ -1,4 +1,5 @@
-package frontend
+package frontend_ast
+
 import "core:hash"
 import "core:fmt"
 
@@ -303,6 +304,31 @@ Token_Pos :: struct {
     column: int, // starting at 1
 }
 
+
+
+Token_Flag :: enum {
+    Remove,
+    Replace,
+}
+
+Token_Flags :: bit_set[Token_Flag]
+
+Token :: struct {
+    kind: Token_Kind,
+    flags: Token_Flags,
+    text: string,
+    pos: Token_Pos,
+}
+
+empty_token := Token{
+    kind = .Invalid,
+}
+
+blank_token := Token{
+    kind = .Ident,
+    text = "_",
+}
+
 token_pos_cmp :: proc(a, b: Token_Pos) -> int {
     unimplemented()
 }
@@ -336,29 +362,6 @@ token_pos_add_column :: proc(pos: Token_Pos) -> Token_Pos {
     pos.column += 1
     pos.offset += 1
     return pos
-}
-
-Token_Flag :: enum {
-    Remove,
-    Replace,
-}
-
-Token_Flags :: bit_set[Token_Flag]
-
-Token :: struct {
-    kind: Token_Kind,
-    flags: Token_Flags,
-    text: string,
-    pos: Token_Pos,
-}
-
-empty_token := Token{
-    kind = .Invalid,
-}
-
-blank_token := Token{
-    kind = .Ident,
-    text = "_",
 }
 
 make_token_ident :: proc(text: string) -> (token: Token) {
