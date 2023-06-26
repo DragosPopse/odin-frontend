@@ -1,5 +1,6 @@
 package frontend_ast
 
+import frontend ".."
 import "core:hash"
 import "core:strings"
 import "core:mem"
@@ -12,7 +13,6 @@ import "core:os"
 
 
 
-Error_Handler :: #type proc(pos: Token_Pos, fmt: string, args: ..any)
 
 default_error_handler :: proc(pos: Token_Pos, msg: string, args: ..any) {
     fmt.eprintf("%v(%d:%d) ", pos.file_id, pos.line, pos.column) // Note(Dragos): Need to get the file from id
@@ -28,35 +28,7 @@ error :: proc(t: ^Tokenizer, offset: int, msg: string, args: ..any) {
     t.error_count += 1
 }
 
-Tokenizer_Init_Error :: enum {
-    None,
 
-    Invalid,
-    Not_Exists,
-    Permission,
-    Empty,
-    File_Too_Large,
-}
-
-Tokenizer :: struct {
-    curr_file_id: int,
-    fullpath: string,
-    src: string,
-    err: Error_Handler,
-
-    // State
-    ch: rune, // current char
-    offset: int, // char pos
-    read_offset: int, // pos from start
-    line_offset: int,
-    line_count: int,
-    insert_semicolon: bool,
-
-    error_count: int,
-
-
-    //loaded_file: Loaded_File, // Todo(Dragos): Figure this out
-}
 
 tokenizer_init :: proc(t: ^Tokenizer, src: string, path: string, err: Error_Handler = default_error_handler) {
     t.src = src
@@ -847,4 +819,28 @@ digit_val :: proc(r: rune) -> int {
         }
     }
     return 16 // larger than highest possible
+}
+
+import test "core:testing"
+import "core:path/filepath"
+
+@test
+test_tokenizer :: proc(T: ^test.T) {
+    t: Tokenizer
+    fullpath := filepath.join({ODIN_ROOT, "examples/demo/demo.odin"})
+    data, ok := os.read_entire_file(fullpath)
+    test.expect(T, ok, "File couldn't be read.")
+    output_sb := strings.builder_make()
+    src := string(data)
+    tokenizer_init(&t, src, fullpath)
+
+    for tok := tokenizer_scan(&t); tok.kind != .EOF; tok = tokenizer_scan(&t) {
+        fmt.sbprintf(&output_sb, "%v[%v](%d:%d)\n", tok.text, tok.kind, tok.pos.line, tok.pos.column)
+    }
+
+
+    output, k := os.open("tokenizer_test.txt", os.O_CREATE | os.O_WRONLY | os.O_TRUNC)
+    test.expect(T, k == 0, "Failed to write output.")
+    os.write_string(output, strings.to_string(output_sb))
+    test.expect(T, t.error_count == 0, "Tokenization failed with some errors.")
 }

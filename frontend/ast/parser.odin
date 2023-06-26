@@ -1,23 +1,26 @@
 package frontend_ast
 
-alloc_ast_node :: proc(f: ^AstFile, kind: AstKind) -> ^Ast {
+import "core:strings"
+
+expr_to_string :: proc(expression: ^Node) -> string {
 	unimplemented()
 }
 
-expr_to_string :: proc(expression: ^Ast) -> string {
-	unimplemented()
-}
-
-allow_field_separator :: proc(f: ^AstFile) -> bool {
+allow_field_separator :: proc(f: ^File) -> bool {
 	unimplemented()
 }
 
 ALLOW_NEWLINE :: true // !strict_style
 
-token_end_of_line :: proc(f: ^AstFile, tok: Token) -> Token {
+thread_safe_get_ast_file_from_id :: proc(id: int) -> ^File {
+	unimplemented()
+}
+
+// Note(Dragos): Is this correct?
+token_end_of_line :: proc(f: ^File, tok: Token) -> Token {
 	tok := tok
-	offset := clamp(tok.pos.offset, 0, len(p.tok.src) - 1)
-	s := p.tok.src[offset:]
+	offset := clamp(tok.pos.offset, 0, len(f.tokenizer.src) - 1)
+	s := f.tokenizer.src[offset:]
 	tok.pos.column -= 1
 	for len(s) != 0 && s[0] != 0 && s[0] != '\n' {
 		s = s[1:]
@@ -27,14 +30,14 @@ token_end_of_line :: proc(f: ^AstFile, tok: Token) -> Token {
 }
 
 // Todo: Review
-get_file_line_as_string :: proc(pos: Token_Pos) -> (str: string, offset_: i32) {
+get_file_line_as_string :: proc(pos: Token_Pos) -> (str: string, offset_: int) {
 	file := thread_safe_get_ast_file_from_id(pos.file_id)
 	if file == nil {
-		return nil
+		return
 	}
 	offset := pos.offset
 	if len(file.tokenizer.src) < offset {
-		return nil
+		return
 	}
 
 	//pos_str := file.tokenizer.src[offset:]
@@ -60,9 +63,5 @@ get_file_line_as_string :: proc(pos: Token_Pos) -> (str: string, offset_: i32) {
 	return strings.clone(line), line_start
 }
 
-// Todo(Dragos): This needs to be simplified, i have no idea how this works
-ast_node_size :: proc(kind: AstKind) -> isize {
-	unimplemented()
-}
 
-global_total_node_memory_allocated_atomic: isize
+global_total_node_memory_allocated_atomic: int

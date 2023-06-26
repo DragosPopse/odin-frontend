@@ -3,129 +3,8 @@ package frontend_ast
 import "core:hash"
 import "core:fmt"
 
-Token_Kind :: enum {
-    Invalid,
-    EOF,
-    Comment,
 
-    Literal_Begin,
-    Ident,
-    Integer,
-    Float,
-    Imag,
-    Rune,
-    String,
-    Literal_End,
 
-    Operator_Begin,
-    Eq,
-    Not,
-    Hash,
-    At,
-    Dollar,
-    Pointer,
-    Question,
-    Add,
-    Sub,
-    Mul,
-    Quo,   
-    Mod,   
-    Mod_Mod,
-    And,   
-    Or,    
-    Xor,   
-    And_Not,
-    Shl,   
-    Shr,   
-    Cmp_And,
-    Cmp_Or,
-
-    Assign_Op_Begin,
-    Add_Eq,   
-    Sub_Eq,   
-    Mul_Eq,   
-    Quo_Eq,   
-    Mod_Eq,   
-    Mod_Mod_Eq,
-    And_Eq,   
-    Or_Eq,    
-    Xor_Eq,   
-    And_Not_Eq,
-    Shl_Eq,   
-    Shr_Eq,   
-    Cmp_And_Eq,
-    Cmp_Or_Eq,
-    Assign_Op_End,
-
-    Increment, 
-    Decrement, 
-    Arrow_Right,
-    Uninit,
-    
-    Comparison_Begin,
-    Cmp_Eq,
-    Not_Eq,
-    Lt,   
-    Gt,   
-    Lt_Eq, 
-    Gt_Eq,
-    Comparison_End,
-
-    Open_Paren,  
-    Close_Paren, 
-    Open_Bracket,
-    Close_Bracket,
-    Open_Brace,  
-    Close_Brace, 
-    Colon,      
-    Semicolon,  
-    Period,     
-    Comma,      
-    Ellipsis,   
-    Range_Full,  
-    Range_Half,  
-    Backslash,
-    Operator_End,
-
-    Keyword_Begin,
-    Import,    
-    Foreign,   
-    Package,   
-    Typeid,    
-    When,      
-    Where,     
-    If,        
-    Else,      
-    For,       
-    Switch,    
-    In,        
-    Not_in,    
-    Do,        
-    Case,      
-    Break,     
-    Continue,  
-    Fallthrough,
-    Defer,     
-    Return,    
-    Proc,      
-    Struct,    
-    Union,     
-    Enum,      
-    Bit_set,   
-    Map,       
-    Dynamic,   
-    Auto_cast, 
-    Cast,      
-    Transmute, 
-    Distinct,  
-    Using,     
-    Context,   
-    Or_else,   
-    Or_return, 
-    Asm,       
-    Matrix,
-    Keyword_End,
-}
 
 token_strings := [Token_Kind]string{
     .Invalid            = "Invalid",
@@ -291,34 +170,13 @@ init_keyword_hash_table :: proc() {
 }
 
 global_file_path_strings: [dynamic]string // index is file id
-global_files: [dynamic]^Ast_File
+global_files: [dynamic]^File
 
 get_file_path_string :: proc(index: int) -> string {
     unimplemented()
 }
 
-Token_Pos :: struct {
-    file_id: int,
-    offset: int,
-    line: int, // starting at 1
-    column: int, // starting at 1
-}
 
-
-
-Token_Flag :: enum {
-    Remove,
-    Replace,
-}
-
-Token_Flags :: bit_set[Token_Flag]
-
-Token :: struct {
-    kind: Token_Kind,
-    flags: Token_Flags,
-    text: string,
-    pos: Token_Pos,
-}
 
 empty_token := Token{
     kind = .Invalid,
