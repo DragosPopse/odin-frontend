@@ -1,4 +1,4 @@
-package frontend_ast
+package frontend_lex
 
 import "core:hash"
 import "core:fmt"

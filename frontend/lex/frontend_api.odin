@@ -1,4 +1,4 @@
-package frontend_ast
+package frontend_lex
 
 import frontend ".."
 
@@ -11,5 +11,3 @@ Tokenizer_Init_Error :: frontend.Tokenizer_Init_Error
 File :: frontend.Ast_File
 Package :: frontend.Ast_Package
 
-// AST Nodes
-Node :: frontend.Node
