@@ -1,6 +1,7 @@
 package frontend
 
 import "core:sync"
+import "core:container/queue"
 
 Exact_Value :: struct {
     
@@ -500,7 +501,7 @@ Scope :: struct {
     flags: Scope_Flags,
 
     using _: struct #raw_union { 
-        pkg: ^Node_Package,
+        pkg: ^Ast_Package,
         file: ^Ast_File,
         procedure_entity: ^Entity,
     },
@@ -519,7 +520,7 @@ Entity_Graph_Node :: struct {
 Import_Graph_Node_Set :: map[^Import_Graph_Node]bool
 
 Import_Graph_Node :: struct {
-    pkg: ^Node_Package,
+    pkg: ^Ast_Package,
     scope: ^Scope,
     pred: Import_Graph_Node_Set,
     succ: Import_Graph_Node_Set,
@@ -778,7 +779,7 @@ Entity :: struct {
     decl_info: ^Decl_Info,
     parent_proc_decl: ^Decl_Info, // nil if in file/global scope
     file: ^Ast_File,
-    pkg: ^Node_Package,
+    pkg: ^Ast_Package,
 
     using_parent: ^Entity,
     using_expr: ^Node,
@@ -803,4 +804,129 @@ Entity :: struct {
         Entity_Nil,
         Entity_Label,
     },
+}
+
+
+
+
+
+// stores all the symbol information for a type-checked program
+Checker_Info :: struct {
+    checker: ^Checker,
+    mutex: sync.RW_Mutex,
+
+    files: map[string]^Ast_File,
+    pkgs: map[string]^Ast_Package,
+    variable_init_order: [dynamic]^Decl_Info,
+
+    builtin_pkg: ^Ast_Package,
+    runtime_pkg: ^Ast_Package,
+    init_pkg: ^Ast_Package,
+    init_scope: ^Scope,
+    entry_point: ^Entity,
+    minimum_dependency_set: map[^Entity]bool,
+    // type info index, min dep index
+    minimum_dependency_type_info_set: map[int]int, // Warning(Dragos): not sure about this one
+
+    testing_procs: [dynamic]^Entity,
+    init_procs: [dynamic]^Entity,
+    fini_procs: [dynamic]^Entity,
+
+    definitions: [dynamic]^Entity,
+    entities: [dynamic]^Entity,
+    required_foreign_imports_through_force: [dynamic]^Entity,
+
+    global_untyped_mutex: sync.RW_Mutex,
+    global_untyped: Untyped_Expr_Info_Map,
+
+    builtin_mutex: sync.Mutex,
+
+    type_and_value_mutex: sync.Mutex,
+
+    lazy_mutex: sync.Recursive_Mutex,
+
+    gen_types_mutex: sync.RW_Mutex,
+    gen_types: map[^Type]Gen_Types_Data,
+
+    type_info_mutex: sync.Mutex,
+    type_info_types: [dynamic]^Type,
+    type_info_map: map[^Type]int,
+
+    foreign_mutex: sync.Mutex,
+    foreigns: map[string]^Entity,
+
+    definition_queue: queue.Queue(^Entity), // MPSC
+    entity_queue: queue.Queue(^Entity), // MPSC
+    required_global_variable_queue: queue.Queue(^Entity), // MPSC
+    required_foreign_imports_through_force_queue: queue.Queue(^Entity), // MPSC
+
+    intrinsics_entry_point_usage: queue.Queue(^Node), // MPSC
+
+    objc_types_mutex: sync.Mutex,
+    objc_msg_send_types: map[^Node]ObjC_Msg_Data,
+
+    load_file_mutex: sync.Mutex,
+    load_file_cache: map[string]^Load_File_Cache,
+
+    all_procedures_mutex: sync.Mutex,
+    all_procedures: [dynamic]^Proc_Info,
+}
+
+Checker_Context :: struct {
+    // Order matters here // Learn(Dragos): why?
+    mutex: sync.Mutex,
+    checker: ^Checker,
+    info: ^Checker_Info,
+
+    pkg: ^Ast_Package,
+    file: ^Ast_File,
+    scope: ^Scope,
+    decl: ^Decl_Info,
+    
+    // Order doesn't matter after this
+    state_flags: State_Flags,
+    in_defer: bool,
+    type_hint: ^Type,
+
+    proc_name: string,
+    curr_proc_decl: ^Decl_Info,
+    curr_proc_sig: ^Type,
+    curr_proc_calling_conv: Proc_Calling_Convention,
+    in_proc_sig: bool,
+    foreign_context: Foreign_Context,
+
+    type_path: ^Checker_Type_Path,
+    type_level: int,
+
+    untyped: Untyped_Expr_Info_Map,
+    
+    inline_for_depth: int,
+
+    in_enum_type: bool,
+    collect_delayed_decls: bool,
+    allow_polymorphic_types: bool,
+    no_polymorphic_errors: bool,
+    hide_polymorphic_errors: bool,
+    in_polymorphic_specialization: bool,
+    allow_arrow_right_selector_expr: bool,
+    polymorphic_scope: ^Scope,
+
+    assignment_lhs_hint: ^Node,
+}
+
+MAX_INLINE_FOR_DEPTH :: 1024
+
+Checker :: struct {
+    parser: ^Parser,
+    info: Checker_Info,
+
+    builtin_ctx: Checker_Context,
+
+    procs_with_deferred_to_check: queue.Queue(^Entity), // MPSC
+    procs_to_check: [dynamic]^Proc_Info,
+
+    nested_proc_lits_mutex: sync.Mutex,
+    nested_proc_lits: [dynamic]^Decl_Info,
+
+    global_untyped_queue: queue.Queue(Untyped_Expr_Info), // MPSC
 }

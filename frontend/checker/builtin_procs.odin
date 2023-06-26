@@ -1,10 +1,6 @@
 package frontend_checker
 
-import "../frontend"
 
-Builtin_Proc_Id :: frontend.Builtin_Proc_Id
-Builtin_Proc_Pkg :: frontend.Builtin_Proc_Pkg
-Builtin_Proc :: frontend.Builtin_Proc
 
 
 

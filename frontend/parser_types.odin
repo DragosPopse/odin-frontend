@@ -65,7 +65,7 @@ Package_Kind :: enum  {
 }
 
 Imported_File :: struct  {
-	pkg: ^Node_Package,
+	pkg: ^Ast_Package,
 	fi: File_Info,
 	pos: Token_Pos, // import
 	index: int,
@@ -88,7 +88,7 @@ Ast_Delay_Queue_Kind :: enum {
 Ast_File :: struct {
 	id: i32,
 	flags: u32,
-	pkg: ^Node_Package,
+	pkg: ^Ast_Package,
 	scope: ^Scope,
 
 	pkg_decl: ^Node,
@@ -163,7 +163,7 @@ PARSER_MAX_FIX_COUNT :: 6
 	entity: ^Entity,
 }
 
-Node_Package :: struct  {
+Ast_Package :: struct  {
 	 kind: Package_Kind,
 	 id: int,
 	 name: string,
@@ -197,7 +197,7 @@ Parser :: struct  {
 	imported_files: map[string]bool, // fullpath set
 	imported_files_mutex: sync.Mutex,
 
-	packages: [dynamic]^Node_Package,
+	packages: [dynamic]^Ast_Package,
 	packages_mutex: sync.Mutex,
 
 	file_to_process_count_atomic: int,
@@ -715,7 +715,7 @@ Node_Package_Decl :: struct {
 }
 
 Node_Import_Decl :: struct {
-	pkg: ^Node_Package,
+	pkg: ^Ast_Package,
 	token: Token,
 	relpath: Token,
 	fullpath: string,
