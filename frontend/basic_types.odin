@@ -1,6 +1,5 @@
 package frontend
 
-// Todo(Dragos): Move this to checker
 
 // Todo(Dragos): Finish defining these
 basic_types := [Basic_Kind]Type{

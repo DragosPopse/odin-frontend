@@ -3,9 +3,11 @@ package frontend
 import "core:sync"
 import "core:container/queue"
 
-Exact_Value :: struct {
-    
-}
+builtin_pkg: ^Package
+intrinsics_pkg: ^Package
+config_pkg: ^Package
+
+
 
 Builtin_Proc :: struct {
     name: string,
@@ -454,7 +456,7 @@ Decl_Info :: struct {
     deps_mutex: sync.Mutex, // RwMutex?
     deps: map[^Entity]bool, // PtrSet
 
-    type_info_deps_mutex: sync.Mutex, // RwMutex
+    type_info_deps_mutex: sync.Mutex, // RwMuteWx
     type_info_deps: map[^Type]bool, // PtrSet
 
     type_and_value_mutex: sync.Mutex,
@@ -464,7 +466,7 @@ Decl_Info :: struct {
 
 // Stores information needed for checking a procedure
 Proc_Info :: struct {
-    file: ^Ast_File,
+    file: ^File,
     token: Token,
     decl: ^Decl_Info,
     type: ^Type,
@@ -501,8 +503,8 @@ Scope :: struct {
     flags: Scope_Flags,
 
     using _: struct #raw_union { 
-        pkg: ^Ast_Package,
-        file: ^Ast_File,
+        pkg: ^Package,
+        file: ^File,
         procedure_entity: ^Entity,
     },
 }
@@ -520,7 +522,7 @@ Entity_Graph_Node :: struct {
 Import_Graph_Node_Set :: map[^Import_Graph_Node]bool
 
 Import_Graph_Node :: struct {
-    pkg: ^Ast_Package,
+    pkg: ^Package,
     scope: ^Scope,
     pred: Import_Graph_Node_Set,
     succ: Import_Graph_Node_Set,
@@ -778,8 +780,8 @@ Entity :: struct {
     identifier: ^Node, // can be nil
     decl_info: ^Decl_Info,
     parent_proc_decl: ^Decl_Info, // nil if in file/global scope
-    file: ^Ast_File,
-    pkg: ^Ast_Package,
+    file: ^File,
+    pkg: ^Package,
 
     using_parent: ^Entity,
     using_expr: ^Node,
@@ -815,13 +817,13 @@ Checker_Info :: struct {
     checker: ^Checker,
     mutex: sync.RW_Mutex,
 
-    files: map[string]^Ast_File,
-    pkgs: map[string]^Ast_Package,
+    files: map[string]^File,
+    pkgs: map[string]^Package,
     variable_init_order: [dynamic]^Decl_Info,
 
-    builtin_pkg: ^Ast_Package,
-    runtime_pkg: ^Ast_Package,
-    init_pkg: ^Ast_Package,
+    builtin_pkg: ^Package,
+    runtime_pkg: ^Package,
+    init_pkg: ^Package,
     init_scope: ^Scope,
     entry_point: ^Entity,
     minimum_dependency_set: map[^Entity]bool,
@@ -878,8 +880,8 @@ Checker_Context :: struct {
     checker: ^Checker,
     info: ^Checker_Info,
 
-    pkg: ^Ast_Package,
-    file: ^Ast_File,
+    pkg: ^Package,
+    file: ^File,
     scope: ^Scope,
     decl: ^Decl_Info,
     

@@ -1,4 +1,4 @@
-package frontend_lex
+package frontend
 
 import "core:hash"
 import "core:fmt"
@@ -250,6 +250,22 @@ token_is_comparison :: proc(t: Token_Kind) -> bool {
 
 token_is_shift :: proc(t: Token_Kind) -> bool {
     return t == .Shl || t == .Shr
+}
+
+token_is_range_token_kind :: proc(kind: Token_Kind) -> bool {
+    #partial switch kind {
+        case .Ellipsis, .Range_Full, .Range_Half: return true
+    }
+    return false
+}
+
+token_is_range_token :: proc(token: Token) -> bool {
+    return token_is_range_token_kind(token.kind)
+}
+
+token_is_range :: proc {
+    token_is_range_token_kind,
+    token_is_range_token,
 }
 
 print_token :: proc(t: Token) {
