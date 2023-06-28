@@ -839,7 +839,7 @@ Node_Enum_Type :: struct {
 	scope: ^Scope,
 	token: Token,
 	base_type: ^Node,
-	fields: ^Node, // FieldValue
+	fields: []^Node, // FieldValue
 	is_using: bool,
 }
 
@@ -1037,9 +1037,11 @@ Derived_Node :: union {
 		Node_Value_Decl,
 		Node_Import_Decl,
 		Node_Foreign_Import_Decl,
+		Node_Package_Decl,
 	// Others
 		Node_Field,
 		Node_Field_List,
+		Node_Attribute,
 	// Types
 		Node_Helper_Type,
 		Node_Distinct_Type,
@@ -1056,6 +1058,7 @@ Derived_Node :: union {
 		Node_Bit_Set_Type,
 		Node_Map_Type,
 		Node_Matrix_Type,
+		Node_Typeid_Type,
 }
 
 Node :: struct  {
@@ -1398,12 +1401,6 @@ make_inline_asm_expr :: proc() {
 	unimplemented("add parameters too... it's just too long... i'm lazy...")
 }
 
-
-
-make_package_decl :: proc(f: ^File, token: Token, name: Token, docs: ^Comment_Group, comment: ^Comment_Group, allocator := context.allocator) -> ^Node {
-	unimplemented()
-}
-
 make_bad_stmt :: proc(f: ^File, begin, end: Token, allocator := context.allocator) -> (node: ^Node, bad_stmt: ^Node_Bad_Stmt) {
 	node, bad_stmt = new_node(f, Node_Bad_Stmt, allocator)
 	bad_stmt.begin = begin
@@ -1632,4 +1629,146 @@ make_multi_pointer_type :: proc(f: ^File, token: Token, type: ^Node, allocator :
 	pointer_type.token = token
 	pointer_type.type = type
 	return node, pointer_type
+}
+
+make_array_type :: proc(f: ^File, token: Token, count, elem: ^Node, allocator := context.allocator) -> (node: ^Node, array_type: ^Node_Array_Type) {
+	node, array_type = new_node(f, Node_Array_Type, allocator)
+	array_type.token = token
+	array_type.count = count
+	array_type.elem = elem
+	return node, array_type
+}
+
+make_dynamic_array_type :: proc(f: ^File, token: Token, elem: ^Node, allocator := context.allocator) -> (node: ^Node, array_type: ^Node_Dynamic_Array_Type) {
+	node, array_type = new_node(f, Node_Dynamic_Array_Type, allocator)
+	array_type.token = token
+	array_type.elem = elem
+	return node, array_type
+}
+
+// Hmm some have slices some actually have dyn arrays. wtf?
+make_struct_type :: proc(f: ^File, token: Token, fields: []^Node, field_count: int, polymorphic_params: ^Node, is_packed, is_raw_union, is_no_copy: bool, align: ^Node, where_token: Token, where_clauses: []^Node, allocator := context.allocator) -> (node: ^Node, struct_type: ^Node_Struct_Type) {
+	node, struct_type = new_node(f, Node_Struct_Type, allocator)
+	struct_type.token = token
+	struct_type.fields = fields
+	struct_type.field_count = field_count
+	struct_type.polymorphic_params = polymorphic_params
+	struct_type.is_packed = is_packed
+	struct_type.is_raw_union = is_raw_union
+	struct_type.is_no_copy = is_no_copy
+	struct_type.align = align
+	struct_type.where_token = where_token
+	struct_type.where_clauses = where_clauses
+	return node, struct_type
+}
+
+make_union_type :: proc(f: ^File, token: Token, variants: []^Node, polymorphic_params: ^Node, align: ^Node, kind: Union_Type_Kind, where_token: Token, where_clauses: []^Node, allocator := context.allocator) -> (node: ^Node, union_type: ^Node_Union_Type) {
+	node, union_type = new_node(f, Node_Union_Type, allocator)
+	union_type.token = token
+	union_type.variants = variants
+	union_type.polymorphic_params = polymorphic_params
+	union_type.align = align
+	union_type.kind = kind 
+	union_type.where_token = where_token
+	union_type.where_clauses = where_clauses
+	return node, union_type
+}
+
+make_enum_type :: proc(f: ^File, token: Token, base_type: ^Node, fields: []^Node, allocator := context.allocator) -> (node: ^Node, enum_type: ^Node_Enum_Type) {
+	node, enum_type = new_node(f, Node_Enum_Type, allocator)
+	enum_type.token = token
+	enum_type.base_type = base_type
+	enum_type.fields = fields
+	return node, enum_type
+}
+
+make_bit_set_type :: proc(f: ^File, token: Token, elem, underlying: ^Node, allocator := context.allocator) -> (node: ^Node, bs_type: ^Node_Bit_Set_Type) {
+	node, bs_type = new_node(f, Node_Bit_Set_Type, allocator)
+	bs_type.token = token
+	bs_type.elem = elem
+	bs_type.underlying = underlying
+	return node, bs_type
+}
+
+make_map_type :: proc(f: ^File, token: Token, key, value: ^Node, allocator := context.allocator) -> (node: ^Node, map_type: ^Node_Map_Type) {
+	node, map_type = new_node(f, Node_Map_Type, allocator)
+	map_type.token = token
+	map_type.key = key
+	map_type.value = value
+	return node, map_type
+}
+
+make_matrix_type :: proc(f: ^File, token: Token, row_count, column_count, elem: ^Node, allocator := context.allocator) -> (node: ^Node, matrix_type: ^Node_Matrix_Type) {
+	node, matrix_type = new_node(f, Node_Matrix_Type, allocator)
+	matrix_type.token = token
+	matrix_type.row_count = row_count
+	matrix_type.column_count = column_count
+	matrix_type.elem = elem
+	return node, matrix_type
+}
+
+make_foreign_block_decl :: proc(f: ^File, token: Token, foreign_lib: ^Node, body: ^Node, docs: ^Comment_Group, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Foreign_Block_Decl) {
+	node, decl = new_node(f, Node_Foreign_Block_Decl, allocator)
+	decl.token = token
+	decl.foreign_library = foreign_lib
+	decl.body = body
+	decl.docs = docs
+	return node, decl
+}
+
+make_label_decl :: proc(f: ^File, token: Token, name: ^Node, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Label) {
+	node, decl = new_node(f, Node_Label, allocator)
+	decl.token = token
+	decl.name = name
+	return node, decl
+}
+
+make_value_decl :: proc(f: ^File, names: []^Node, type: ^Node, values: []^Node, is_mutable: bool, docs, comment: ^Comment_Group, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Value_Decl) {
+	node, decl = new_node(f, Node_Value_Decl, allocator)
+	decl.names = names
+	decl.type = type
+	decl.values = values
+	decl.is_mutable = is_mutable
+	decl.docs = docs
+	decl.comment = comment
+	// Note(Dragos): Bill sets the allocator of attributes, but do we needs to? 
+	return node, decl
+}
+
+make_package_decl :: proc(f: ^File, token, name: Token, docs, comment: ^Comment_Group, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Package_Decl) {
+	node, decl = new_node(f, Node_Package_Decl, allocator)
+	decl.token = token
+	decl.name = name
+	decl.docs = docs
+	decl.comment = comment
+	return node, decl
+}
+
+make_import_decl :: proc(f: ^File, token, relpath, import_name: Token, docs, comment: ^Comment_Group, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Import_Decl) {
+	node, decl = new_node(f, Node_Import_Decl, allocator)
+	decl.token = token
+	decl.relpath = relpath
+	decl.import_name = import_name
+	decl.docs = docs
+	decl.comment = comment
+	return node, decl
+}
+
+make_foreign_import_decl :: proc(f: ^File, token: Token, filepaths: []Token, library_name: Token, docs, comment: ^Comment_Group, allocator := context.allocator) -> (node: ^Node, decl: ^Node_Foreign_Import_Decl) {
+	node, decl = new_node(f, Node_Foreign_Import_Decl, allocator)
+	decl.token = token
+	decl.filepaths = filepaths
+	decl.library_name = library_name
+	decl.docs = docs
+	decl.comment = comment
+	return node, decl
+}
+
+make_attribute :: proc(f: ^File, token, open, close: Token, elems: []^Node, allocator := context.allocator) -> (node: ^Node, attribute: ^Node_Attribute) {
+	node, attribute = new_node(f, Node_Attribute, allocator)
+	attribute.token = token
+	attribute.open = open
+	attribute.close = close
+	attribute.elems = elems
+	return node, attribute
 }
