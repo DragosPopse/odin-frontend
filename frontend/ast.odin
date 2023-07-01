@@ -235,7 +235,7 @@ Proc_Tag :: enum  {
 	Bounds_Check    = 1<<0,
 	No_Bounds_Check = 1<<1,
 	Type_Assert     = 1<<2,
-	No_type_Assert  = 1<<3,
+	No_Type_Assert  = 1<<3,
 
 	Require_Results = 1<<4,
 	Optional_Ok     = 1<<5,
