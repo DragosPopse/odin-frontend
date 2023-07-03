@@ -263,7 +263,7 @@ Proc_Calling_Convention :: enum  i32 {
 
 	//MAX,
 
-
+	Foreign_Block_Default,
 	//Foreign_Block_Default = -1, // Todo(Dragos): Make this part of the enum properly so i can enumare the next array
 };
 
@@ -279,6 +279,7 @@ proc_calling_convention_strings := [Proc_Calling_Convention]string {
 	.Inline_Asm = "inlineasm",
 	.Win64 = "win64",
 	.SysV = "sysv",
+	.Foreign_Block_Default = "", // Is this ok?
 };
 
   default_calling_convention :: proc() -> Proc_Calling_Convention {

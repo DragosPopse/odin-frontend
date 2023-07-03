@@ -11,7 +11,29 @@ expr_to_string :: proc(expression: ^Node) -> string {
 }
 
 allow_field_separator :: proc(f: ^File) -> bool {
-	unimplemented()
+	token := f.curr_token
+	if allow_token(f, .Comma) do return true
+	if token.kind == .Semicolon {
+		ok := false
+		if ALLOW_NEWLINE && token_is_newline(token) {
+			next := peek_token(f).kind
+			#partial switch next {
+			case .Close_Brace, .Close_Paren: ok = true
+			}
+		}
+		if !ok {
+			p := token_to_string(token)
+			syntax_error(token_end_of_line(f, f.prev_token), "Expected a comma, got a %s", p)
+		}
+		advance_token(f)
+		return true
+	}
+	return false
+}
+
+token_to_string :: proc(tok: Token) -> string {
+	if token_is_newline(tok) do return "newline"
+	return token_strings[tok.kind]
 }
 
 ALLOW_NEWLINE :: true // !strict_style
@@ -419,12 +441,58 @@ parse_file :: proc(p: ^Parser, f: ^File) -> bool {
 	if f.error_count == 0 {
 		decls := make([dynamic]^Node)
 		for f.curr_token.kind != .EOF {
-			
+			stmt := parse_stmt(f)
+			if stmt != nil {
+				if _, is_empty_stmt := stmt.variant.(Node_Empty_Stmt); !is_empty_stmt {
+					append(&decls, stmt)
+					if expr_stmt, is_expr_stmt := &stmt.variant.(Node_Expr_Stmt); is_expr_stmt && expr_stmt.expr != nil {
+						if proc_lit, is_proc_lit := &expr_stmt.expr.variant.(Node_Proc_Lit); is_proc_lit  {
+							syntax_error(stmt, "Procedure literal evaluated but not used")
+						}
+					}
+
+					f.total_file_decl_count += calc_decl_count(stmt)
+					#partial switch in stmt.variant {
+					case Node_When_Stmt, Node_Expr_Stmt, Node_Import_Decl: f.delayed_decl_count += 1
+					}
+				}
+			}
 		}
+
+		f.decls = decls[:]
+
+		// parse_setup_file_decls(p, f, base_dir, f->decls);
 	}
 	
 
 	unimplemented()
+}
+
+calc_decl_count :: proc(decl: ^Node) -> int {
+	count := 0
+	#partial switch var in decl.variant {
+	case Node_Block_Stmt: 
+		for stmt in var.stmts {
+			count += calc_decl_count(stmt)
+		}
+
+	case Node_When_Stmt: 
+		inner_count := calc_decl_count(var.body)
+		if var.else_stmt != nil {
+			inner_count = max(inner_count, calc_decl_count(var.else_stmt))
+		}
+		count += inner_count
+
+	case Node_Value_Decl: 
+		count = len(var.names)
+
+	case Node_Foreign_Block_Decl: 
+		count = calc_decl_count(var.body)
+	
+	case Node_Import_Decl, Node_Foreign_Import_Decl: count = 1
+	}
+
+	return count
 }
 
 parse_stmt :: proc(f: ^File) -> ^Node {
@@ -470,11 +538,53 @@ parse_expr_list :: proc(f: ^File, lhs: bool) -> [dynamic]^Node {
 }
 
 parse_expr :: proc(f: ^File, lhs: bool) -> ^Node {
-	unimplemented()
+	return parse_binary_expr(f, lhs, 1)
 }
 
-parse_binary_expr :: proc(f: ^File, lhs: bool, prec_in: i32) -> ^Node {
-	unimplemented()
+parse_binary_expr :: proc(f: ^File, lhs: bool, prec_in: int) -> ^Node {
+	lhs := lhs
+	expr := parse_unary_expr(f, lhs)
+	loop: for {
+		op := f.curr_token
+		op_prec := token_precedence(f, op.kind)
+		if op_prec < prec_in do break // this will also catch invalid binary operators
+		prev := f.prev_token
+		#partial switch op.kind {
+		case .If, .When: if prev.pos.line < op.pos.line do break loop
+		}
+
+		expect_operator(f)
+
+		if op.kind == .Question {
+			cond := expr
+			x := parse_expr(f, lhs)
+			token_c := expect_token(f, .Colon)
+			y := parse_expr(f, lhs)
+			expr, _ = make_ternary_if_expr(f, x, cond, y)
+		} else if op.kind == .If || op.kind == .When { // Note(Dragos): Could we move the other switch in here?
+			x := expr
+			cond := parse_expr(f, lhs)
+			tok_else := expect_token(f, .Else)
+			y := parse_expr(f, lhs)
+
+			if op.kind == .If do expr, _ = make_ternary_if_expr(f, x, cond, y)
+			else if op.kind == .When do expr, _ = make_ternary_when_expr(f, x, cond, y) 
+		} else {
+			right := parse_binary_expr(f, false, op_prec + 1)
+			if right == nil {
+				syntax_error(op, "Expected expression on the right-hand side of the binary operator '%s'", op.text)
+			}
+			if op.kind == .Or_else {
+				expr, _ = make_or_else_expr(f, expr, op, right)
+			} else {
+				expr, _ = make_binary_expr(f, op, expr, right) 
+			}
+		}
+
+		lhs = false
+	}
+
+	return expr
 }
 
 parse_unary_expr :: proc(f: ^File, lhs: bool) -> ^Node {
@@ -483,12 +593,67 @@ parse_unary_expr :: proc(f: ^File, lhs: bool) -> ^Node {
 		token := advance_token(f)
 		expect_token(f, .Open_Paren)
 		type := parse_type(f)
+		expect_token(f, .Close_Paren)
+		expr := parse_unary_expr(f, lhs)
+		result, _ := make_type_cast(f, token, type, expr)
+		return result
+	
+	case .Auto_cast: // maybe ols will help me rename things after i finish with this. god bless
+		token := advance_token(f)
+		expr := parse_unary_expr(f, lhs)
+		result, _ := make_auto_cast(f, token, expr)
+		return result
+	
+	case .Add, .Sub, .Xor, .And, .Not: 
+		token := advance_token(f)
+		expr := parse_unary_expr(f, lhs)
+		result, _ := make_unary_expr(f, token, expr)
+		return result
+	
+	case .Increment, .Decrement:
+		token := advance_token(f)
+		syntax_error(token, "Unary '%s' operator is not supported", token.text)
+		expr := parse_unary_expr(f, lhs)
+		result, _ := make_unary_expr(f, token, expr)
+		return result
+
+	case .Period: 
+		token := expect_token(f, .Period)
+		ident := parse_ident(f)
+		result, _ := make_implicit_selector_expr(f, token, ident)
+		return result
 	}
+
+	return parse_atom_expr(f, parse_operand(f, lhs), lhs)
+}
+
+token_precedence :: proc(f: ^File, t: Token_Kind) -> (priority: int) {
+	#partial switch t {
+	case .Question, .If, .When, .Or_else: return 1
+	case .Ellipsis, .Range_Full, .Range_Half: 
+		if !f.allow_range do return 0
+		return 2
+	case .Cmp_Or: return 3
+	case .Cmp_And: return 4
+	case .Cmp_Eq, .Not_Eq, .Lt, .Gt, .Lt_Eq, .Gt_Eq: return 5
+	case .In, .Not_in: 
+		if f.expr_level < 0 && !f.allow_in_expr do return 0
+		return 6
+	case .Add, .Sub, .Or, .Xor: return 6
+	case .Mul, .Quo, .Mod, .Mod_Mod, .And, .And_Not, .Shl, .Shr: return 7
+	}
+	return 0
 }
 
 parse_type :: proc(f: ^File) -> ^Node {
 	type := parse_type_or_ident(f)
-	unimplemented()
+	if type == nil {
+		token := advance_token(f)
+		syntax_error(token, "Expected a type")
+		result, _ := make_bad_expr(f, token, f.curr_token)
+		return result
+	}
+	return type
 }
 
 parse_type_or_ident :: proc(f: ^File) -> ^Node {
@@ -991,6 +1156,66 @@ parse_operand :: proc(f: ^File, lhs: bool) -> ^Node {
 }
 
 parse_call_expr :: proc(f: ^File, operand: ^Node) -> ^Node {
+	args := make([dynamic]^Node)
+	open_paren, close_paren, ellipsis: Token
+	prev_expr_level := f.expr_level
+	prev_allow_newline := f.allow_newline
+	f.expr_level = 0
+	f.allow_newline = ALLOW_NEWLINE
+
+	open_paren = expect_token(f, .Open_Paren)
+
+	seen_ellipsis := false
+	for f.curr_token.kind != .Close_Paren && f.curr_token.kind != .EOF {
+		if f.curr_token.kind == .Comma {
+			syntax_error(f.curr_token, "Expected an expression not ,")
+		} else if f.curr_token.kind == .Eq {
+			syntax_error(f.curr_token, "Expected an expression not =")
+		}
+
+		prefix_ellipsis := false
+		if f.curr_token.kind == .Ellipsis {
+			prefix_ellipsis = true
+			ellipsis = expect_token(f, .Ellipsis)
+		}
+
+		arg := parse_expr(f, false)
+		if f.curr_token.kind == .Eq {
+			eq := expect_token(f, .Eq)
+
+			if prefix_ellipsis {
+				syntax_error(ellipsis, "'..' must be applied to value rather than the field name")
+			}
+
+			value := parse_value(f) 
+			arg, _ = make_field_value(f, arg, value, eq)
+		} else if seen_ellipsis {
+			syntax_error(arg, "Positional arguments are not allowed after '..'")
+		}
+		append(&args, arg)
+
+		if ellipsis.pos.line != 0 do seen_ellipsis = true
+		if !allow_field_separator(f) do break
+	}
+
+	f.allow_newline = prev_allow_newline
+	f.expr_level = prev_expr_level
+	
+	close_paren = expect_closing(f, .Close_Paren, "argument list")
+
+	call, _ := make_call_expr(f, operand, args[:], open_paren, close_paren, ellipsis)
+
+	o := unparen_expr(operand)
+	selector_expr, is_selector_expr := &o.variant.(Node_Selector_Expr)
+	if is_selector_expr && selector_expr.token.kind == .Arrow_Right {
+		result, _ := make_selector_call_expr(f, selector_expr.token, o, call)
+		return result
+	}
+
+	return call
+}
+
+parse_value :: proc(f: ^File) -> ^Node {
 	unimplemented()
 }
 
@@ -1003,7 +1228,38 @@ parse_union_variant_list :: proc(f: ^File) -> [dynamic]^Node {
 }
 
 parse_struct_field_list :: proc(f: ^File, name_count_: ^int) -> ^Node {
-	unimplemented()
+	start_token := f.curr_token
+	decls := make([dynamic]^Node) // Note(Dragos): Why is this here ?
+	total_name_count := 0
+	params := parse_field_list(f, &total_name_count, Field_Flags_Struct, .Close_Brace, false, false)
+	if name_count_ != nil do name_count_^ = total_name_count
+	return params
+}
+
+// Note(Dragos): This can be simplified. The logic looks a bit goofy.
+check_procedure_name_list :: proc(names: []^Node) -> bool {
+	if len(names) == 0 do return false
+	_, first_is_polymorphic := names[0].variant.(Node_Poly_Type)
+	any_polymorphic_names := first_is_polymorphic
+	for i in 1..<len(names) {
+		name := names[i]
+		_, is_poly := name.variant.(Node_Poly_Type)
+		if first_is_polymorphic {
+			if is_poly { 
+				any_polymorphic_names = true
+			} else {
+				syntax_error(name, "Mixture of polymorphic and non-polymorphic identifiers")
+				return any_polymorphic_names
+			}
+		} else {
+			if is_poly {
+				any_polymorphic_names = true
+				syntax_error(name, "Mixture of polymorphic and non-polymorphic identifiers")
+				return any_polymorphic_names
+			}
+		}
+	} 
+	return any_polymorphic_names
 }
 
 // Refactor(Dragos): Maybe rename this check thing, since check should be type checker stuff
@@ -1011,8 +1267,17 @@ check_polymorphic_params_for_type :: proc(f: ^File, polymorphic_params: ^Node, t
 	unimplemented()
 }
 
-parse_field_list :: proc(f: ^File, name_count_: ^int, allowed_flags: Stmt_Allow_Flags, follow: Token_Kind, allow_default_parameters: bool, allow_typeid_token: bool) -> ^Node {
-	unimplemented()
+parse_field_list :: proc(f: ^File, name_count_: ^int, allowed_flags: Field_Flags, follow: Token_Kind, allow_default_parameters: bool, allow_typeid_token: bool) -> ^Node {
+	prev_allow_newline := f.allow_newline
+	defer f.allow_newline = prev_allow_newline
+	f.allow_newline = ALLOW_NEWLINE
+
+	start_token := f.curr_token
+	docs := f.lead_comment
+
+	params := make([dynamic]^Node)
+	// This needs the weird AstAndFlags. Apparently it's coming from parse_field_prefixes, so Field_Flag
+	return nil
 }
 
 convert_stmt_to_body :: proc(f: ^File, stmt: ^Node) -> ^Node {
@@ -1020,6 +1285,33 @@ convert_stmt_to_body :: proc(f: ^File, stmt: ^Node) -> ^Node {
 }
 
 parse_body :: proc(f: ^File) -> ^Node {
+	prev_expr_level := f.expr_level
+	prev_allow_newline := f.allow_newline
+
+	f.expr_level = 0
+	open := expect_token(f, .Open_Brace)
+	stmts := parse_stmt_list(f)
+	close := expect_token(f, .Close_Brace)
+
+	f.expr_level = prev_expr_level
+	f.allow_newline = prev_allow_newline
+
+	result, _ := make_block_stmt(f, stmts[:], open, close)
+	return result
+}
+
+parse_control_statement_semicolon_separator :: proc(f: ^File) -> bool {
+	tok := peek_token(f)
+	if tok.kind != .Open_Brace do return allow_token(f, .Semicolon)
+	if f.curr_token.text == ";" do return allow_token(f, .Semicolon)
+	return false
+}
+
+parse_do_body :: proc(f: ^File, token: Token, msg: string) -> ^Node {
+	unimplemented()
+}
+
+parse_stmt_list :: proc(f: ^File) -> [dynamic]^Node {
 	unimplemented()
 }
 
@@ -1027,11 +1319,185 @@ parse_proc_tags :: proc(f: ^File, tags: ^Proc_Tags) -> ^Node {
 	unimplemented()
 }
 
+parse_lhs_expr_list :: proc(f: ^File) -> [dynamic]^Node {
+	return parse_expr_list(f, true)
+}
+
 parse_rhs_expr_list :: proc(f: ^File) -> [dynamic]^Node {
-	unimplemented()
+	return parse_expr_list(f, false)
+}
+
+parse_ident_list :: proc(f: ^File, allow_poly_names: bool) -> [dynamic]^Node {
+	list := make([dynamic]^Node)
+
+	for {
+		append(&list, parse_ident(f, allow_poly_names))
+		if f.curr_token.kind != .Comma || f.curr_token.kind == .EOF {
+			break
+		}
+		advance_token(f)
+	}
+
+	return list
 }
 
 parse_proc_type :: proc(f: ^File, proc_token: Token) -> ^Node {
+	params, results: ^Node
+	diverging := false
+	cc: Proc_Calling_Convention = .Invalid
+	if f.curr_token.kind == .String {
+		token := expect_token(f, .String)
+		c := string_to_calling_convention(string_value_from_token(f, token))
+		if c == .Invalid {
+			syntax_error(token, "Unknown procedure calling convention '%s'", token.text)
+		} else {
+			cc = c
+		}
+	}
+
+	if cc == .Invalid {
+		if f.in_foreign_block do cc = .Foreign_Block_Default
+		else do cc = default_calling_convention()
+	}
+
+	expect_token(f, .Open_Paren)
+	params = parse_field_list(f, nil, Field_Flags_Signature, .Close_Paren, true, true)
+	if ALLOW_NEWLINE do skip_possible_newline(f)
+	
+	expect_token_after(f, .Close_Paren, "parameter list")
+	results = parse_results(f, &diverging)
+
+	tags: Proc_Tags
+	is_generic := false
+
+	field_list := &params.variant.(Node_Field_List)
+	loop: for &param in field_list.list {
+		field := &param.variant.(Node_Field)
+		if field.type != nil {
+			if _, is_poly_type := field.type.variant.(Node_Poly_Type); is_poly_type {
+				is_generic = true
+				break loop
+			}
+			for name in field.names {
+				if _, is_poly_type := name.variant.(Node_Poly_Type); is_poly_type {
+					is_generic = true
+					break loop
+				}
+			}
+		}
+	}
+	
+	result, _ := make_proc_type(f, proc_token, params, results, tags, cc, is_generic, diverging)
+	return result
+}
+
+parse_var_type :: proc(f: ^File, allow_ellipsis: bool, allow_typeid_token: bool) -> ^Node {
+	if allow_ellipsis && f.curr_token.kind == .Ellipsis {
+		tok := advance_token(f) 
+		type := parse_type_or_ident(f)
+		if type == nil {
+			syntax_error(tok, "Variadic field missing type after '..'")
+			type, _ = make_bad_expr(f, tok, f.curr_token)
+		}
+		result, _ := make_ellipsis(f, tok, type)
+		return result 
+	}
+	type: ^Node
+	if allow_typeid_token && f.curr_token.kind == .Typeid {
+		token := expect_token(f, .Typeid)
+		specialization: ^Node
+		if allow_token(f, .Quo) {
+			specialization = parse_type(f)
+		}
+		type, _ = make_typeid_type(f, token, specialization)
+	} else {
+		type = parse_type(f)
+	}
+	return type
+}
+
+Parse_Field_Prefix_Mapping :: struct {
+	name: string,
+	token_kind: Token_Kind,
+	flag: Field_Flag,
+}
+
+parse_field_prefix_mappings := [?]Parse_Field_Prefix_Mapping { // Note(Dragos): I could maybe make a sparse version of this using the Field_Flag
+	{"using", .Using, .Using},
+	{"no_alias", .Hash, .No_Alias},
+	{"c_vararg", .Hash, .C_Vararg},
+	{"const", .Hash, .Const},
+	{"any_int", .Hash, .Any_Int},
+	{"subtype", .Hash, .Subtype},
+	{"by_ptr", .Hash, .By_Ptr},
+}
+
+is_token_field_prefix :: proc(f: ^File) -> Field_Flag {
+	#partial switch f.curr_token.kind {
+	case .EOF: return .Invalid
+	case .Using: return .Using
+	case .Hash:
+		advance_token(f)
+		#partial switch f.curr_token.kind {
+		case .Ident: 
+			for field_prefix in parse_field_prefix_mappings {
+				if field_prefix.token_kind == .Hash {
+					if f.curr_token.text == field_prefix.name {
+						return field_prefix.flag
+					}
+				}
+			}
+		}
+		return .Unknown
+	}
+	return .Invalid
+}
+
+parse_field_prefixes :: proc(f: ^File) -> Field_Flags {
+	counts: [len(parse_field_prefix_mappings)]int
+	for {
+		flag := is_token_field_prefix(f)
+		if flag == .Invalid do break
+		if flag == .Unknown {
+			syntax_error(f.curr_token, "Unknown prefix kind '#%s'", f.curr_token.text)
+			advance_token(f)
+			continue
+		}
+
+		for field_prefix, i in parse_field_prefix_mappings {
+			if field_prefix.flag == flag {
+				counts[i] += 1
+				advance_token(f)
+				break
+			}
+		}
+	}
+
+	field_flags: Field_Flags
+	for field_flag, i in parse_field_prefix_mappings {
+		if counts[i] > 0 {
+			field_flags += {field_flag.flag}
+
+			if counts[i] != 1 {
+				prefix := ""
+				if field_flag.token_kind == .Hash do prefix = "#"
+				syntax_error(f.curr_token, "Multiple '%s%s' in this field list", prefix, field_flag.name)
+			}
+		}
+	}
+
+	return field_flags
+}
+
+parse_results :: proc(f: ^File, diverging: ^bool) -> ^Node {
+	unimplemented()
+}
+
+string_value_from_token :: proc(f: ^File, token: Token) -> string {
+	unimplemented()
+}
+
+string_to_calling_convention :: proc(str: string) -> Proc_Calling_Convention {
 	unimplemented()
 }
 
@@ -1048,11 +1514,11 @@ unparen_expr :: proc(node: ^Node) -> ^Node {
 }
 
 parse_literal_value :: proc(f: ^File, type: ^Node) -> ^Node {
-
+	unimplemented()
 }
 
-parse_ident :: proc(f: ^File) -> ^Node {
-
+parse_ident :: proc(f: ^File, allow_poly_name := false) -> ^Node {
+	unimplemented()
 }
 
 warning_tok :: proc(tok: Token, msg: string, args: ..any) {
@@ -1071,6 +1537,23 @@ parse_build_tag :: proc(token_for_pos: Token, s: string) -> bool {
 
 // Parse +build-project-name
 parse_build_project_directory_tag :: proc(token_for_pos: Token, s: string) -> bool {
+	prefix := "+build-project-name"
+	assert(strings.has_prefix(s, prefix))
+	s := strings.trim_space(s[len(prefix):])
+	if len(s) == 0 do return true
+
+	any_correct := false
+
+	for len(s) > 0 {
+		this_kind_correct := true
+		for len(s) > 0 { // this needs to be a do while
+			
+		}
+	}
+	unimplemented()
+}
+
+process_imported_file :: proc(p: ^Parser, imported_file: Imported_File) -> Parse_File_Error {
 	unimplemented()
 }
 
