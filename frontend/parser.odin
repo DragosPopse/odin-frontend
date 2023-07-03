@@ -468,6 +468,26 @@ parse_file :: proc(p: ^Parser, f: ^File) -> bool {
 	unimplemented()
 }
 
+// Make this simpler
+build_tag_get_token :: proc(s: string, out: ^string) -> string {
+	s := strings.trim_space(s)
+	n := 0
+	for n < len(s) {
+		rn, width := utf8.decode_rune(s[n:])
+		if n == 0 && rn == '!' {
+			
+		} else if !unicode.is_letter(rn) && !unicode.is_digit(rn) {
+			k := max(n, width, 1)
+			out^ = s[k:]
+			return s[:k]
+		}
+
+		n += width
+	}
+	out^ = ""
+	return s
+}
+
 calc_decl_count :: proc(decl: ^Node) -> int {
 	count := 0
 	#partial switch var in decl.variant {
