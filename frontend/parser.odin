@@ -434,7 +434,9 @@ parse_file :: proc(p: ^Parser, f: ^File) -> bool {
 		}
 	}
 
-	pd, _ := make_package_decl(f, f.package_token, package_name, docs, f.line_comment)
+	//pd, _ := make_package_decl(f, f.package_token, package_name, docs, f.line_comment)
+	pd := new_node(Package_Decl, f, f.package_token)
+	
 	expect_semicolon(f)
 	f.pkg_decl = pd
 
@@ -452,7 +454,7 @@ parse_file :: proc(p: ^Parser, f: ^File) -> bool {
 					}
 
 					f.total_file_decl_count += calc_decl_count(stmt)
-					#partial switch in stmt.variant {
+					#partial switch _ in stmt.variant {
 					case Node_When_Stmt, Node_Expr_Stmt, Node_Import_Decl: f.delayed_decl_count += 1
 					}
 				}
