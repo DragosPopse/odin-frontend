@@ -2,11 +2,11 @@
     "collections": [
         {
             "name": "core",
-            "path": "D:\\dev\\vendor\\odin\\core"
+            "path": "C:\\dev\\Odin\\core"
         }
     ],
     "enable_document_symbols": true,
-    "enable_semantic_tokens": false,
+    "enable_semantic_tokens": true,
     "enable_hover": true,
     "enable_snippets": true,
     "checker_args": "-no-entry-point"
